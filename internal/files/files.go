@@ -1,28 +1,25 @@
 package files
 
 import (
+	"bufio"
 	"fmt"
+	"gopkg.in/yaml.v3"
+	"officerat/ratTask/internal/helpers"
 	"os"
 	"path/filepath"
-
-	"gopkg.in/yaml.v3"
+	"strings"
 )
-
-
 
 var tasksLocation string
 
 func getTasksLocation() {
-    homeDir := os.Getenv("HOME")
-    if homeDir != "" {
-        tasksLocation = filepath.Join(homeDir, ".ratTasks", "tasks.yaml")
-    } else {
-        tasksLocation = filepath.Join(os.Getenv("USERPROFILE"), ".ratTasks", "tasks.yaml")
-    }
+	homeDir := os.Getenv("HOME")
+	if homeDir != "" {
+		tasksLocation = filepath.Join(homeDir, ".ratTasks", "tasks.yaml")
+	} else {
+		tasksLocation = filepath.Join(os.Getenv("USERPROFILE"), ".ratTasks", "tasks.yaml")
+	}
 }
-
-
-
 
 type Task struct {
 	ID          int    `yaml:"id"`
@@ -144,8 +141,8 @@ func ListTasks(ID int) {
 				fmt.Printf("Description: %s\n", task.Description)
 				fmt.Println("------------------------------------------")
 				return
-			} 
-			
+			}
+
 		}
 		fmt.Println("Task not found.")
 	} else {
@@ -164,14 +161,13 @@ func ListTasks(ID int) {
 	}
 }
 
-
 func DeleteTask(ID int) {
 	if err := readTasksFromFile(); err != nil {
 		fmt.Println("Error reading tasks:", err)
 		return
 	}
 
-	if len(tasks.Tasks) == 0{
+	if len(tasks.Tasks) == 0 {
 		fmt.Println("No tasks found.")
 		return
 	}
@@ -180,15 +176,14 @@ func DeleteTask(ID int) {
 		for i, task := range tasks.Tasks {
 			if task.ID == ID {
 				tasks.Tasks = append(tasks.Tasks[:i], tasks.Tasks[i+1:]...)
-				
-				
+
 				if err := writeTasksToFile(); err != nil {
 					fmt.Println("Error writing tasks:", err)
 					return
 				}
 				return
 			}
-			
+
 		}
 		fmt.Println("Task not found.")
 	}
@@ -200,7 +195,7 @@ func CompleteTask(ID int) {
 		return
 	}
 
-	if len(tasks.Tasks) == 0{
+	if len(tasks.Tasks) == 0 {
 		fmt.Println("No tasks found.")
 		return
 	}
@@ -211,30 +206,121 @@ func CompleteTask(ID int) {
 			break
 		}
 	}
-	
+
 	task := tasks.Tasks[taskIndex]
 
 	if task.Completed {
 		fmt.Println("Task with given ID does not exist")
 	}
-    
+
 	tasks.Tasks[taskIndex].Completed = true
 
-    fmt.Println("------------------------------------------")
-    fmt.Printf("ID: %d\n", task.ID)
-    fmt.Printf("Completed: %s\n", func() string {
-        if tasks.Tasks[taskIndex].Completed {
-            return "yes"
-        }
-        return "no"
-    }())
-    fmt.Printf("Name: %s\n", task.Name)
-    fmt.Println("------------------------------------------")
+	fmt.Println("------------------------------------------")
+	fmt.Printf("ID: %d\n", task.ID)
+	fmt.Printf("Completed: %s\n", func() string {
+		if tasks.Tasks[taskIndex].Completed {
+			return "yes"
+		}
+		return "no"
+	}())
+	fmt.Printf("Name: %s\n", task.Name)
+	fmt.Println("------------------------------------------")
 
-    // Write the updated task list to file
-    if err := writeTasksToFile(); err != nil {
-        fmt.Println("Error writing tasks:", err)
-        return
-    }
-	
+	// Write the updated task list to file
+	if err := writeTasksToFile(); err != nil {
+		fmt.Println("Error writing tasks:", err)
+		return
+	}
+
+}
+
+func UpdateTask(ID int, updateType string) {
+	if err := readTasksFromFile(); err != nil {
+		fmt.Println("Error reading tasks:", err)
+		return
+	}
+
+	if len(tasks.Tasks) == 0 {
+		fmt.Println("No tasks found.")
+		return
+	}
+
+	var taskIndex int
+	for i, task := range tasks.Tasks {
+		if task.ID == ID {
+			taskIndex = i
+			break
+		}
+	}
+	task := tasks.Tasks[taskIndex]
+
+	switch updateType {
+	case "name":
+
+		fmt.Print("New task name: ")
+		newName, _ := bufio.NewReader(os.Stdin).ReadString('\n')
+		newName = strings.TrimSpace(newName)
+		tasks.Tasks[taskIndex].Name = newName
+		fmt.Println("------------------------------------------")
+		fmt.Printf("Completed: %s\n", func() string {
+			if task.Completed {
+				return "yes"
+			}
+			return "no"
+		}())
+		fmt.Printf("Name: %s\n", tasks.Tasks[taskIndex].Name)
+		fmt.Printf("Description: %s\n", task.Description)
+		fmt.Println("------------------------------------------")
+
+		if err := writeTasksToFile(); err != nil {
+			fmt.Println("Error writing tasks:", err)
+			return
+		}
+		return
+	case "description":
+		
+		fmt.Print("New task description: ")
+		newDesc, _ := bufio.NewReader(os.Stdin).ReadString('\n')
+		newDesc = strings.TrimSpace(newDesc)
+		tasks.Tasks[taskIndex].Description = newDesc
+		fmt.Println("------------------------------------------")
+		fmt.Printf("Completed: %s\n", func() string {
+			if task.Completed {
+				return "yes"
+			}
+			return "no"
+		}())
+		fmt.Printf("Name: %s\n", task.Name)
+		fmt.Printf("Description: %s\n", tasks.Tasks[taskIndex].Description)
+		fmt.Println("------------------------------------------")
+
+		if err := writeTasksToFile(); err != nil {
+			fmt.Println("Error writing tasks:", err)
+			return
+		}
+		return
+	case "complete":
+
+		tasks.Tasks[taskIndex].Completed = !task.Completed
+		fmt.Println(tasks.Tasks[taskIndex].Completed)
+		fmt.Println("------------------------------------------")
+		fmt.Printf("Completed: %s\n", func() string {
+			if tasks.Tasks[taskIndex].Completed {
+				return "yes"
+			}
+			return "no"
+		}())
+		fmt.Printf("Name: %s\n", task.Name)
+		fmt.Printf("Description: %s\n", task.Description)
+		fmt.Println("------------------------------------------")
+		
+		if err := writeTasksToFile(); err != nil {
+			fmt.Println("Error writing tasks:", err)
+			return
+		}
+		return
+	default:
+		helpers.CliHelp()
+	}
+
 }

@@ -2,6 +2,7 @@ package Args
 
 import (
 	"officerat/ratTask/internal/files"
+	"officerat/ratTask/internal/helpers"
 	"reflect"
 	"strconv"
 )
@@ -27,6 +28,8 @@ func ArgHandler(args []string) {
 	var listTasks bool;
 	var delete bool;
 	var complete bool;
+	var update bool;
+	var updateType string;
 	var taskID int;
 
 
@@ -35,13 +38,18 @@ func ArgHandler(args []string) {
 		switch args[i] {
 		case "-n":
 			newTask = true
-			taskName = args[i+1]
+			if i+1 < len(args) {
+				taskName = args[i+1]
+			} else {
+				helpers.CliHelp()
+			}
         case "-d":
 			description = true
 			if i+1 < len(args) {
 				descriptionText = args[i+1]
 			} else {
-				descriptionText = ""
+				helpers.CliHelp()
+				return
 			}
 		case "-l":
 			listTasks = true
@@ -64,16 +72,35 @@ func ArgHandler(args []string) {
 			} else {
 				taskID = 0
 			}
+		case "-u":
+			update = true;
+			if i+1 < len(args) {
+				taskID = StringToInt(args[i+1])
+			} else {
+				helpers.CliHelp()
+				return
+			}
+			if i+3 < len(args) {
+				if args[2] == "-t" {
+					updateType = args[3]
+				}
+				
+			} else {
+				helpers.CliHelp()
+				return
+			}
 		}
 		
 	}
 
 	if len(args) == 0 {
-		CliHelp()
+		helpers.CliHelp()
+		return
 	}
 
 	if description && !newTask  {
-		CliHelp()
+		helpers.CliHelp()
+		return
 	}
 
 	if newTask {
@@ -96,6 +123,9 @@ func ArgHandler(args []string) {
 		files.CompleteTask(taskID)
 	}
 	
+	if update {
+		files.UpdateTask(taskID, updateType)
+	}
 
 }
 
